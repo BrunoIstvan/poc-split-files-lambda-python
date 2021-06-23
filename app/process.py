@@ -1,6 +1,6 @@
 from os import environ
 
-from app.process_credit_sales_file import process_credit_sales_file
+from app.process_file import process_credit_sales_file, process_file
 from app.process_debit_sales_file import process_debit_sales_file
 from app.process_financial_file import process_financial_file
 from app.process_outstanding_balance_file import process_outstanding_balance_file
@@ -22,40 +22,19 @@ def process(bucket, key):
     # logger.debug('>>> Get Data File')  
     print('>>> Get Data File')  
     # read all data from this file
-    lines = get_data_file(bucket=bucket, key=key)
+    blocks = get_data_file(bucket=bucket, key=key)
+
+    blocks = blocks[1:]
 
     # logger.debug('>>> Validate First Line')  
     print('>>> Validate First Line')  
     # validate first line after recover file type
-    file_type, line = validate_first_line(lines)
+    file_type = get_file_type(key)
 
-    if file_type in ['EEVC', 'NNVC', 'NEVC']:
-        # logger.debug('>>> Run Process Credit Sales File')  
-        print('>>> Run Process Credit Sales File')  
-        process_credit_sales_file(header=line, 
-                                  lines=lines[1:], 
-                                  prefix='EEVC')
-                                  
-    elif file_type in ['EEVD', 'NNVD', 'NEVD']:
-        # logger.debug('>>> Run Process Debit Sales File')  
-        print('>>> Run Process Debit Sales File')  
-        process_debit_sales_file(header=line, 
-                                 lines=lines[1:], 
-                                 prefix='EEVD')
-                                 
-    elif file_type in ['EEFI', 'NNFI', 'NEFI']:
-        # logger.debug('>>> Run Process Financial File')  
-        print('>>> Run Process Financial File')  
-        process_financial_file(header=line, 
-                               lines=lines[1:], 
-                               prefix='EEFI')
-                               
-    elif file_type in ['EESA', 'NNSA', 'NESA']:
-        # logger.debug('>>> Run Process Outstanding Balance File')  
-        print('>>> Run Process Outstanding Balance File')  
-        process_outstanding_balance_file(header=line, 
-                                         lines=lines[1:], 
-                                         prefix='EESA')
+    # logger.debug('>>> Run Process Credit Sales File')
+    print('>>> Run Process Credit Sales File')
+    process_file(blocks=blocks,
+                 prefix=file_type)
 
     # logger.debug('>>> Run Move File to Backup Bucket')  
     print('>>> Run Move File to Backup Bucket')  
@@ -72,19 +51,16 @@ def get_data_file(bucket, key):
         raise Exception('None file to be processed')
     file = file['Body']
     file = file.read().decode('utf8')
-    return file.split('\n')
+    blocks = file.split('@MAILBOX')
+    return blocks
 
 
-def validate_first_line(lines):
-    
-    if lines[0][19:20] == '@':  # entao eh cabecalho com tipo de arquivo
-        file_type = lines[0][48:52]
+def get_file_type(key):
 
-    if file_type not in ['EEVC', 'NNVC', 'NEVC',
-                         'EEVD', 'NNVD', 'NEVD',
-                         'EEFI', 'NNFI', 'NEFI',
-                         'EESA', 'NNSA', 'NESA']:
+    file_type = key[0:4]
+
+    if file_type not in ['EEVC', 'EEVD', 'EEFI', 'EESA']:
         raise Exception('File type not treated in this process')
 
-    return file_type, lines[0]
+    return file_type
 

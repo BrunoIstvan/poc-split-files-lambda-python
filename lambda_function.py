@@ -4,6 +4,7 @@ from app.process import process
 # logger = logging.getLogger()
 # logger.setLevel(logging.INFO)
 
+
 def lambda_handler(event, context):
     
     # verificar se os dados do arquivo vieram no evento
@@ -20,5 +21,3 @@ def lambda_handler(event, context):
         print('>>> Finish Process')  
         
     return {'response': 'OK'}
-    
-    
