@@ -1,9 +1,6 @@
 from os import environ
 
-from app.process_file import process_credit_sales_file, process_file
-from app.process_debit_sales_file import process_debit_sales_file
-from app.process_financial_file import process_financial_file
-from app.process_outstanding_balance_file import process_outstanding_balance_file
+from app.process_file import process_file
 from app.s3_service import get_object, move_object
 
 # import logging
